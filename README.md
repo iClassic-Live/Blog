@@ -14,3 +14,4 @@
 ## JavaScript基础
 
 ### [1.初识JavaScript](https://github.com/iClassic-Live/Blog/wiki/初识JavaScript)
+### [2.JavaScript的一些基本语法](https://github.com/iClassic-Live/Blog/wiki/JavaScript的一些基本语法)
