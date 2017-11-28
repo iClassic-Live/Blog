@@ -19,3 +19,8 @@
 ### [3.函数](https://github.com/iClassic-Live/Blog/wiki/函数)
 ### [4.JavaScript的预编译过程](https://github.com/iClassic-Live/Blog/wiki/JavaScript的预编译过程)
 ### [5.JavaScript的作用域与作用域链](https://github.com/iClassic-Live/Blog/wiki/JavaScript的作用域与作用域链)
+### [6.闭包](https://github.com/iClassic-Live/Blog/wiki/闭包)
+### [7.立即执行函数](https://github.com/iClassic-Live/Blog/wiki/立即执行函数)
+### [8.对象](https://github.com/iClassic-Live/Blog/wiki/对象)
+### [9.类包装](https://github.com/iClassic-Live/Blog/wiki/类包装)
+### [10.原型](https://github.com/iClassic-Live/Blog/wiki/原型)
