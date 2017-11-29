@@ -9,6 +9,7 @@
 
 
 
+
 # 目录
 
 
@@ -21,5 +22,6 @@
 ### [5.JavaScript的作用域与作用域链](https://github.com/iClassic-Live/Blog/wiki/JavaScript的作用域与作用域链)
 ### [6.闭包](https://github.com/iClassic-Live/Blog/wiki/闭包)
 ### [7.立即执行函数](https://github.com/iClassic-Live/Blog/wiki/立即执行函数)
-### [8.对象与包装类](https://github.com/iClassic-Live/Blog/wiki/对象与包装类)
-### [9.原型](https://github.com/iClassic-Live/Blog/wiki/原型)
+### [8.对象](https://github.com/iClassic-Live/Blog/wiki/对象)
+### [9.包装类](https://github.com/iClassic-Live/Blog/wiki/包装类)
+### [10.原型](https://github.com/iClassic-Live/Blog/wiki/原型)
