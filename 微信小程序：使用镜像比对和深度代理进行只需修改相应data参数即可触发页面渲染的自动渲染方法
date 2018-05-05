@@ -1,4 +1,8 @@
-//关键词：使用ES6的proxy做深度代理、自创的镜像比对法
+//关键词：自动渲染、使用ES6的proxy做深度代理、自创的镜像比对法使用ES6的proxy做深度代理、自创的镜像比对法
+/*P.S.: 
+    1. 使用该方法进行自动渲染会导致应用运行流畅度比主动调用setData进行渲染时稍有下降，
+       若对应用运行流畅度有要求请不要使需要渲染的数据嵌套太深;
+    2. 请尽量不要在引入本方法后再主动调用setData函数，以导致不必要的重复渲染 */
 module.exports = { //需要使用该方法时在相应页面require即可
   rendering(that) {  //that参数为调用该函数所在地的this
     //返回深度代理函数的立即执行结果
@@ -57,12 +61,14 @@ module.exports = { //需要使用该方法时在相应页面require即可
               if (item instanceof Array) {
                 item.splice(item.indexOf(item[key], 1));
               } else delete item[key];
-              status = item;
+              status = JSON.parse(JSON.stringify(item));
               that.setData({ [path]: item });
             }else {
               delete status[key];
               that.setData({ [key]: null });
             }
+            //执行item相应属性的删除后对item重新订制深度代理
+            item = deepProxy(item, status, path);
             return Reflect.deleteProperty(target, key);
           }
         });
