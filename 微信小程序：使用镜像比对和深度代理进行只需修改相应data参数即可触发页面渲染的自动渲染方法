@@ -6,7 +6,7 @@
 module.exports = { //需要使用该方法时在相应页面require即可
   rendering(that) {  //that参数为调用该函数所在地的this
     //返回深度代理函数的立即执行结果
-    return that["data"] = (function deepProxy (item, status, path) {
+    return (function deepProxy (item, status, path) {
       if ( typeof status !== "object"  ) {  //当首次执行深度代理函数
         status = JSON.parse(JSON.stringify(item)); //拷贝item镜像
       }
