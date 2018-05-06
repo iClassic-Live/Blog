@@ -32,8 +32,9 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
           set(target, key, value, receiver) {  //当item的属性被读写时的操作
             let condition = !(item instanceof Array && key === "length"); //排除不需要渲染的属性
             if (condition) {
-              if (status) {  //若可以主动渲染则进行渲染
-                status = false;  //关闭主动渲染开关
+              if (status) {  //若渲染状态为未渲染
+                status = false;  //设定渲染状态为渲染中
+                target[key] = value;
                 that.setData({ [(() => {
                   if (path !== undefined) {
                     if (item instanceof Array) {
@@ -49,17 +50,20 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
                     } else return path + "." + key;
                   } else return key;
                 })(), true);
-              } else status = true;  //复位主动渲染开关
+              }else if (!status) status = true;
             }
             return Reflect.set(target, key, value, receiver);
           },
           deleteProperty(target, key) {  //当item的属性被删除时的操作
-            if (path !== undefined) {
-              if (item instanceof Array) {
-                item.splice(item.indexOf(item[key], 1));
-              } else delete item[key];
-              that.setData({ [path]: item });
-            } else that.setData({ [key]: null });
+            if (key in item) {
+              status = false;  //设定渲染状态为渲染中
+              if (path !== undefined) {
+                if (item instanceof Array) {
+                  item.splice(item.indexOf(item[key]), 1);
+                } else delete item[key];
+                that.setData({ [path]: item });
+              } else that.setData(item);
+            }
             return Reflect.deleteProperty(target, key);
           }
         });
