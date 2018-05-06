@@ -9,7 +9,7 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
     return (function deepProxy(item, path, status) {
       status = true;
       if (item instanceof Object) {  //当item的数据类型为对象时
-        if (item instanceof Array) { //若item为数组则以数组方式对其属性进行遍历
+        if (item instanceof Array) {  //若item为数组则以数组方式对其属性进行遍历
           item.forEach((ele, index) => {
             item[index] = deepProxy(item[index], (() => {
               if (path !== undefined) {
@@ -32,8 +32,8 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
           set(target, key, value, receiver) {  //当item的属性被读写时的操作
             let condition = !(item instanceof Array && key === "length"); //排除不需要渲染的属性
             if (condition) {
-              if (status) {  //若需要渲染的属性未被渲染
-                status = false;
+              if (status) {  //若可以主动渲染则进行渲染
+                status = false;  //关闭主动渲染开关
                 that.setData({ [(() => {
                   if (path !== undefined) {
                     if (item instanceof Array) {
@@ -49,7 +49,7 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
                     } else return path + "." + key;
                   } else return key;
                 })(), true);
-              } else status = true;
+              } else status = true;  //复位主动渲染开关
             }
             return Reflect.set(target, key, value, receiver);
           },
