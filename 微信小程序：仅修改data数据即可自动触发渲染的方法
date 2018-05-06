@@ -6,25 +6,25 @@
 module.exports = {  //需要使用该方法时在相应页面的onLoad周期require即可
   rendering(that) {  //that参数为调用该函数所在地的this
     //返回深度代理函数的立即执行结果
-    return (function deepProxy(item, status, path) {
-      status = false;
+    return (function deepProxy(item, path, status) {
+      status = true;
       if (item instanceof Object) {  //当item的数据类型为对象时
         if (item instanceof Array) { //若item为数组则以数组方式对其属性进行遍历
           item.forEach((ele, index) => {
-            item[index] = deepProxy(item[index], false, (() => {
+            item[index] = deepProxy(item[index], (() => {
               if (path !== undefined) {
                 return path + "[" + index + "]";
               } else return index;
             })());
-          });
+          }, true);
         } else {  //若item不为数组则以对象方式对其属性进行遍历
           for (let prop in item) {
             if (item.hasOwnProperty(prop)) {
-              item[prop] = deepProxy(item[prop], false, (() => {
+              item[prop] = deepProxy(item[prop], (() => {
                 if (path !== undefined) {
                   return path + "." + prop;
                 } else return prop;
-              })());
+              })(), true);
             }
           }
         }
@@ -32,8 +32,8 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
           set(target, key, value, receiver) {  //当item的属性被读写时的操作
             let condition = !(item instanceof Array && key === "length"); //排除不需要渲染的属性
             if (condition) {
-              if (!status) {  //若需要渲染的属性未被渲染
-                status = true;
+              if (status) {  //若需要渲染的属性未被渲染
+                status = false;
                 that.setData({ [(() => {
                   if (path !== undefined) {
                     if (item instanceof Array) {
@@ -42,14 +42,14 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
                   } else return key;
                 })()]: value }); //渲染对应数据
                 //对新写入的数据进行深度代理
-                value = deepProxy(value, false, (() => {
+                value = deepProxy(value, (() => {
                   if (path !== undefined) {
                     if (item instanceof Array) {
                       return path + "[" + key + "]";
                     } else return path + "." + key;
                   } else return key;
-                })());
-              } else status = false;
+                })(), true);
+              } else status = true;
             }
             return Reflect.set(target, key, value, receiver);
           },
