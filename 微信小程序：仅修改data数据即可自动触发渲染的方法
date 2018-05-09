@@ -3,76 +3,73 @@
     1. 使用该方法进行渲染会导致应用运行流畅度比主动调用setData进行渲染时稍有下降，
        若对应用运行流畅度有要求请不要使需要渲染的数据嵌套太深;
     2. 请尽量不要在引入本方法后再主动调用setData函数，以导致不必要的重复渲染;
-    3. 由于代理渲染方法仍不完善：
-        1) 请尽量不要使用会导致原数组改变的数组方法修改data数据;
-        2) 请不要对data中的数组数据使用delete运算符删除元素 */
+    3. 由于该自动渲染方法仍不完善，以下情况将很可能导致应用崩溃：
+        1) 使用会导致原数组改变的数组方法修改或删除data数据;
+        2) 对data中的数组数据使用delete运算符删除元素 */
 module.exports = {  //需要使用该方法时在相应页面的onLoad周期require然后赋值给this.data即可
   rendering(that) {  //that参数为调用该函数所在地的this
     //返回深度代理函数的立即执行结果
-    return (function deepProxy(item, path, status) {
-      status = "unset";
+    return (function deepProxy(item, path, status) {  //参数分别为当前对象、当前路径、当前渲染状态
+      //渲染路径生成器
+      function pathCreater(target, way, key) {  //参数分别为属性key的父级对象的数据类型、当前路径、当前属性名
+        if (way !== undefined) {
+          if (target instanceof Array) {
+            return way + "[" + key + "]";
+          } else return way + "." + key;
+        } else return key;
+      }
+      //渲染状态阵列生成器
+      function statusCreater(target) {  //参数为当前对象
+        if (target instanceof Object) {
+          let statusQueue = new Object();
+          if (target instanceof Array) {
+            target.forEach((ele, index) => { status[index] = "unset" });
+          } else for (let prop in target) statusQueue[prop] = "unset";
+          return statusQueue;
+        } else return "root";  //根属性，渲染状态由父级对象的渲染状态阵列控制
+      }
+      status = statusCreater(item);
       if (item instanceof Object) {  //当item的数据类型为对象时
         if (item instanceof Array) {  //若item为数组则以数组方式对其属性进行遍历
           item.forEach((ele, index) => {
-            item[index] = deepProxy(item[index], (() => {
-              if (path !== undefined) {
-                return path + "[" + index + "]";
-              } else return index;
-            })(), "unset");
+            item[index] = deepProxy(item[index],
+                                                    pathCreater(item, path, index),
+                                                    statusCreater(item[index]));
           });
         } else {  //若item不为数组则以对象方式对其属性进行遍历
           for (let prop in item) {
-            if (item.hasOwnProperty(prop)) {
-              item[prop] = deepProxy(item[prop], (() => {
-                if (path !== undefined) {
-                  return path + "." + prop;
-                } else return prop;
-              })(), "unset");
-            }
+            item[prop] = deepProxy(item[prop],
+                                                    pathCreater(item, path, prop),
+                                                    statusCreater(item[prop]));
           }
         }
         return new Proxy(item, {  //返回为item订制的代理
           set(target, key, value, receiver) {  //当item的属性被读写时的操作
+            if (status[key] === undefined) status[key] = "unset";  //若当前属性的渲染状态为空则设定状态
+            //排除会导致渲染出错的情况
             let condition = item instanceof Array ? key === "length" ? false : true : true;
-            if (status === "unset" && condition) {
-              status = "setting"; //设定渲染状态为写入中
-              that.setData({ [(() => {  //渲染对应数据
-                if (path !== undefined) {
-                  if (item instanceof Array) {
-                    return path + "[" + key + "]";
-                  } else return path + "." + key;
-                } else return key;
-              })()]: value });
+            if (status[key] === "unset" && condition) {  //若当前渲染状态为待渲染
+              status[key] = "setting";  //设定渲染状态为渲染中
+              that.setData({ [pathCreater(item, path, key)]: value });  //渲染对应数据
               //对新写入的数据进行深度代理
-              value = deepProxy(value, (() => {
-                if (path !== undefined) {
-                  if (item instanceof Array) {
-                    return path + "[" + key + "]";
-                  } else return path + "." + key;
-                } else return key;
-              })(), "unset");
-            } else if (status === "setting") status = "unset";  //复位渲染状态
-            return Reflect.set(target, key, value, receiver);
+              value = deepProxy(value, pathCreater(item, path, key), statusCreater(value));
+            } else if (status[key] === "setting") status[key] = "unset";
+            return Reflect.set(target, key, value, receiver)
           },
-          deleteProperty(target, key) {  //当item属性被删除时的操作
-            status = "deleting";  //设定渲染状态为删除中
+          deleteProperty(target, key) {
+            status[key] = "deleting";  //设定渲染状态为删除中
             if (item instanceof Array) {  //当item为数组时
               item = item.slice(0, item.length - 1);  //排除被删除的无效元素
               if (path !== undefined) {
                 that.setData({ [path]: item });
               } else that.setData(item);
-              status = "unset";  //复位渲染状态
+              status[key] = "unset";  //复位渲染状态
             } else {  //当item不是数组时
-              (function loop() {
-                setTimeout(() => {
-                  if (!(key in item)) {  //当被删除的属性已不在item中时再执行渲染
-                    if (path !== undefined) {
-                      that.setData({ [path]: item });
-                    } else that.setData({ [key]: null });
-                    status = "unset";  //复位渲染状态
-                  } else loop();  //当被删除的属性仍在item中时轮询等待
-                })
-              })()
+              delete item[key];
+              if (path !== undefined) {
+                that.setData({ [path]: item });
+              } else that.setData({ [key]: null });
+              status[key] = "unset";  //复位渲染状态
             }
             return Reflect.deleteProperty(target, key);
           }
