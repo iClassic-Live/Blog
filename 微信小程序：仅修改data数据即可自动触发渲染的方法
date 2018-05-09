@@ -36,15 +36,13 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
             let condition = item instanceof Array ? key === "length" ? false : true : true;
             if (status === "unset" && condition) {
               status = "setting"; //设定渲染状态为写入中
-              that.setData({
-              [(() => {  //渲染对应数据
+              that.setData({ [(() => {  //渲染对应数据
                 if (path !== undefined) {
                   if (item instanceof Array) {
                     return path + "[" + key + "]";
                   } else return path + "." + key;
                 } else return key;
-              })()]: value
-              });
+              })()]: value });
               //对新写入的数据进行深度代理
               value = deepProxy(value, (() => {
                 if (path !== undefined) {
