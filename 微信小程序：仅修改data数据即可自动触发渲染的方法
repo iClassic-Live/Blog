@@ -33,14 +33,14 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
         if (item instanceof Array) {  //若item为数组则以数组方式对其属性进行遍历
           item.forEach((ele, index) => {
             item[index] = deepProxy(item[index],
-                                                    pathCreater(item, path, index),
-                                                    statusCreater(item[index]));
+                                    pathCreater(item, path, index),
+                                    statusCreater(item[index]));
           });
         } else {  //若item不为数组则以对象方式对其属性进行遍历
           for (let prop in item) {
             item[prop] = deepProxy(item[prop],
-                                                    pathCreater(item, path, prop),
-                                                    statusCreater(item[prop]));
+                                   pathCreater(item, path, prop),
+                                   statusCreater(item[prop]));
           }
         }
         return new Proxy(item, {  //返回为item订制的代理
