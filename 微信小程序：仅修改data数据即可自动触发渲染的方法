@@ -3,9 +3,8 @@
     1. 使用该方法进行渲染会导致应用运行流畅度比主动调用setData进行渲染时稍有下降，
        若对应用运行流畅度有要求请不要使需要渲染的数据嵌套太深;
     2. 请尽量不要在引入本方法后再主动调用setData函数，以导致不必要的重复渲染;
-    3. 由于该自动渲染方法仍不完善，以下情况将很可能导致应用崩溃：
-        1) 使用会导致原数组改变的数组方法修改或删除data数据;
-        2) 对data中的数组数据使用delete运算符删除元素 */
+    3. 访问执行时可能会导致原数组多次改变的数组方法修改或删除data数据将报错;
+    4. 对data中的数组数据使用delete运算符删除元素可能导致应用崩溃 */
 module.exports = {  //需要使用该方法时在相应页面的onLoad周期require然后赋值给this.data即可
   rendering(that) {  //that参数为调用该函数所在地的this
     //返回深度代理函数的立即执行结果
@@ -13,7 +12,7 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
       //渲染路径生成器
       function pathCreater(target, way, key) {  //参数分别为属性key的父级对象的数据类型、当前路径、当前属性名
         if (way !== undefined) {
-          if (target instanceof Array) {
+          if (target instanceof Array  && key !== "length") {
             return way + "[" + key + "]";
           } else return way + "." + key;
         } else return key;
@@ -44,10 +43,24 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
           }
         }
         return new Proxy(item, {  //返回为item订制的代理
+          get(target, key, receiver) {
+            if (item instanceof Array) {
+              //禁止访问执行时可能会导致原数组多次改变的数组方法以防止自动渲染出错
+              let exception = ["unshift", "sort", "splice", "reverse"];
+              let condition = exception.some(ele => { return key === ele });
+              if (condition && item[key] === Array.prototype[key]) {
+                throw Error("Setting data field " + path +
+                                   " by array method " + key + " directly is invalid");
+              }
+            }
+            return Reflect.get(target, key, receiver);
+          },
           set(target, key, value, receiver) {  //当item的属性被读写时的操作
-            if (status[key] === undefined) status[key] = "unset";  //若当前属性的渲染状态为空则设定状态
             //排除会导致渲染出错的情况
             let condition = item instanceof Array ? key === "length" ? false : true : true;
+            if (status[key] === undefined  && condition) {
+              status[key] = "unset";  //若当前属性的渲染状态为空则设定状态
+            }
             if (status[key] === "unset" && condition) {  //若当前渲染状态为待渲染
               status[key] = "setting";  //设定渲染状态为渲染中
               that.setData({ [pathCreater(item, path, key)]: value });  //渲染对应数据
@@ -57,20 +70,11 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
             return Reflect.set(target, key, value, receiver)
           },
           deleteProperty(target, key) {
-            status[key] = "deleting";  //设定渲染状态为删除中
-            if (item instanceof Array) {  //当item为数组时
-              item = item.slice(0, item.length - 1);  //排除被删除的无效元素
-              if (path !== undefined) {
-                that.setData({ [path]: item });
-              } else that.setData(item);
-              status[key] = "unset";  //复位渲染状态
-            } else {  //当item不是数组时
-              delete item[key];
-              if (path !== undefined) {
-                that.setData({ [path]: item });
-              } else that.setData({ [key]: null });
-              status[key] = "unset";  //复位渲染状态
-            }
+            delete item[key];
+            if (path !== undefined) {
+              that.setData({ [path]: item });
+            } else that.setData({ [key]: null });
+            delete status[key];  //删除该状态渲染状态
             return Reflect.deleteProperty(target, key);
           }
         });
