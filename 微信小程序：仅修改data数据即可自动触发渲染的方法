@@ -43,11 +43,11 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
             if (item instanceof Array) {
               //重写所有在执行时可能会多次改变自身的数组方法以防止渲染出错
               let exception = ["unshift", "sort", "splice", "reverse", "forEach"];
-              let condition = exception.some(ele => { return key === ele });
+              let condition = exception.some(ele => key === ele);
               if (condition && item[key] === Array.prototype[key]) {
                 let that = this;
                 item[key] = function () {
-                  let buffer = this.map(ele => { return ele });
+                  let buffer = [...this];
                   let value = buffer[key](...arguments);
                   that.setData({ [path]: buffer });
                   return value;
