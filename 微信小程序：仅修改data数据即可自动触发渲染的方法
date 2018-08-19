@@ -9,11 +9,8 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
     return (function deepProxy(item, path, status) {  //参数分别为当前对象、当前路径、当前渲染状态
       //渲染路径生成器
       function pathCreater(target, way, key) {  //参数分别为属性key的父级对象的数据类型、当前路径、当前属性名
-        if (way !== undefined) {
-          if (target instanceof Array && key !== "length") {
-            return way + "[" + key + "]";
-          } else return way + "." + key;
-        } else return key;
+        if (way === undefined) return key
+        return Array.isArray(target) && key !== "length" ? `${way}[${key}]` : `${way}.${key}`;
       }
       //渲染状态阵列生成器
       function statusCreater(target) {  //参数为当前对象
@@ -47,8 +44,7 @@ module.exports = {  //需要使用该方法时在相应页面的onLoad周期requ
               if (condition && item[key] === Array.prototype[key]) {
                 let that = this;
                 item[key] = function () {
-                  let buffer = [...this];
-                  let value = buffer[key](...arguments);
+                  let value = [...this][key](...arguments);
                   that.setData({ [path]: buffer });
                   return value;
                 }
